@@ -1,6 +1,6 @@
-# tttgame
+# tic-tac-toe game
 
-**tttgame** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
+**tic-tac-toe game** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
 
 ## Get started
 
@@ -14,14 +14,33 @@ starport serve
 
 Initialization parameters of your app are stored in `config.yml`.
 
-### `accounts`
+### `playerID invites sb to gameID`
 
-A list of user accounts created during genesis of your application.
+A player invites another player to join the game.
 
 | Key   | Required | Type            | Description                                       |
 | ----- | -------- | --------------- | ------------------------------------------------- |
-| name  | Y        | String          | Local name of the key pair                        |
-| coins | Y        | List of Strings | Initial coins with denominations (e.g. "100coin") |
+| playerID  | Y        | String          | Player may exist or not                        |
+| gameID | Y        | String | Game may exist or not |
+
+### `playerID accept to join gameID`
+
+A player invites another player to join the game.
+
+| Key   | Required | Type            | Description                                       |
+| ----- | -------- | --------------- | ------------------------------------------------- |
+| playerID  | Y        | String          | Player may exist or not                        |
+| gameID | Y        | String | Game may exist or not |
+
+### `playerID place a piece to (X, Y) on the game board`
+
+A player invites another player to join the game.
+
+| Key   | Required | Type            | Description                                       |
+| ----- | -------- | --------------- | ------------------------------------------------- |
+| playerID  | Y        | String          | Player may exist or not                        |
+| X | Y        | String | in [0, 1, 2] |
+| Y | Y        | String | in [0, 1, 2] |
 
 ## Learn more
 
