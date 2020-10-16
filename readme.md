@@ -1,6 +1,6 @@
-# tttgame
+# tic-tac-toe game
 
-**tttgame** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
+**tic-tac-toe game** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
 
 ## Get started
 
