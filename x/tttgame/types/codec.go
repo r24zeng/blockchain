@@ -6,10 +6,12 @@ import (
 
 // RegisterCodec registers concrete types on codec
 func RegisterCodec(cdc *codec.Codec) {
-  // this line is used by starport scaffolding # 1
-		cdc.RegisterConcrete(MsgCreateGame{}, "tttgame/CreateGame", nil)
-		cdc.RegisterConcrete(MsgSetGame{}, "tttgame/SetGame", nil)
-		cdc.RegisterConcrete(MsgDeleteGame{}, "tttgame/DeleteGame", nil)
+	// this line is used by starport scaffolding # 1
+	cdc.RegisterConcrete(MsgInviteGame{}, "tttgame/InviteGame", nil)
+	cdc.RegisterConcrete(MsgAcceptGame{}, "tttgame/AcceptGame", nil)
+	cdc.RegisterConcrete(MsgPlayGame{}, "tttgame/PlayGame", nil)
+	cdc.RegisterConcrete(Player{}, "tttgame/Player", nil)
+	cdc.RegisterConcrete(Game{}, "tttgame/Game", nil)
 }
 
 // ModuleCdc defines the module codec

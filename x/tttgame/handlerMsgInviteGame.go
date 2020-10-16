@@ -2,33 +2,28 @@ package tttgame
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/r24zeng/tttgame/x/tttgame/keeper"
 	"github.com/r24zeng/tttgame/x/tttgame/types"
 )
 
 func handleMsgInviteGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgInviteGame) (*sdk.Result, error) {
-	var player types.Player
-	var game types.Game
 
-	if !k.PlayerExist(ctx, msg.playerID) { // the player doesn't exist, then create a new player
-		player = k.CreatePlayer(ctx, msg.playerID)
-	} else {
-		player, _ := k.GetPlayer(ctx, msg.playerID)
+	if !k.PlayerExist(ctx, msg.PlayerID) { // the player doesn't exist, then create a new player
+		k.CreatePlayer(ctx, msg.PlayerID)
 	}
 
-	if player.GameID != "" { // the player is in another game progress, fail
-		return nil, types.ErrInvalidPlay
+	if k.GetPlayerGameID(ctx, msg.PlayerID) != "" { // the player is in another game progress, fail
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "the player is in another game progress, invite fail")
 	}
 
-	if !k.GameExist(ctx, msg.GameID) { // if the game doesn't exist, initial a game
-		game = k.CreateGame(ctx, msg.gameID)
-	} else {
-		game, _ := k.GetGame(ctx, msg.gameID)
+	if !k.GameExist(ctx, msg.GameID) { // if the game doesn't exist, initialize a game
+		k.CreateGame(ctx, msg.gameID)
 	}
 
-	if game.State != "completed games" { // the game is in progress, fail
-		return nil, types.ErrGameInProgress
+	if k.GetGameState(ctx, msg.GameID) != "completed games" { // the game is in progress, fail
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "This game is waiting for joining or in progress, invite fail")
 	}
 
 	k.SetPlayerGameID(ctx, msg.GameID)

@@ -1,6 +1,5 @@
 package types
 
-
-		const QueryListGame = "list-game"
-		const QueryGetGame = "get-game"
-		
+const QueryGetGame = "get-game"
+const QueryGetPlayer = "get-player"
+const QueryGetGameBoard = "get-game-board"
