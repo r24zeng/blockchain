@@ -2,7 +2,7 @@ package cli
 
 import (
 	"bufio"
-    
+
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
@@ -13,21 +13,19 @@ import (
 	"github.com/r24zeng/tttgame/x/tttgame/types"
 )
 
-func GetCmdCreateGame(cdc *codec.Codec) *cobra.Command {
+func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-game [state] [players] [board] [curTurn]",
-		Short: "Creates a new game",
-		Args:  cobra.MinimumNArgs(1),
+		Use:   "open-game [playerID] [gameID]",
+		Short: "open a new game, waiting for another player",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			argsState := string(args[0] )
-			argsPlayers := string(args[1] )
-			argsBoard := string(args[2] )
-			argsCurTurn := string(args[3] )
-			
+			argsPlayer := string(args[0])
+			argsGame := string(args[1])
+
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgCreateGame(cliCtx.GetFromAddress(), string(argsState), string(argsPlayers), string(argsBoard), string(argsCurTurn))
+			msg := types.NewMsgInviteGame(cliCtx.GetFromAddress(), argsPlayer, argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
@@ -37,23 +35,19 @@ func GetCmdCreateGame(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-
-func GetCmdSetGame(cdc *codec.Codec) *cobra.Command {
+func GetCmdAcceptGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "set-game [id]  [state] [players] [board] [curTurn]",
-		Short: "Set a new game",
-		Args:  cobra.MinimumNArgs(1),
+		Use:   "accept-game [playerID] [gameID]",
+		Short: "accept invitation, start game",
+		Args:  cobra.ExtractArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			id := args[0]
-			argsState := string(args[1])
-			argsPlayers := string(args[2])
-			argsBoard := string(args[3])
-			argsCurTurn := string(args[4])
-			
+			argsPlayer := string(args[0])
+			argsGame := string(args[1])
+
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgSetGame(cliCtx.GetFromAddress(), id, string(argsState), string(argsPlayers), string(argsBoard), string(argsCurTurn))
+			msg := types.NewMsgAcceptGame(cliCtx.GetFromAddress(), argsPlayer, argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
@@ -63,18 +57,21 @@ func GetCmdSetGame(cdc *codec.Codec) *cobra.Command {
 	}
 }
 
-func GetCmdDeleteGame(cdc *codec.Codec) *cobra.Command {
+func GetCmdPlayGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "delete-game [id]",
-		Short: "Delete a new game by ID",
-		Args:  cobra.ExactArgs(1),
+		Use:   "play-game [playerID] [coordinate-X] [coordinate-Y]",
+		Short: "play a piece to board",
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			argsPlayer := string(args[0])
+			argsX := int(args[1])
+			argsY := int(args[2])
 
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
 
-			msg := types.NewMsgDeleteGame(args[0], cliCtx.GetFromAddress())
+			msg := types.NewMsgPlayGame(cliCtx.GetFromAddress(), argsPlayer, argsX, argsY)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err

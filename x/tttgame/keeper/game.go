@@ -84,6 +84,12 @@ func (k Keeper) PlayerExist(ctx sdk.Context, playerID string) {
 	return store.Has([]byte(types.PlayerPrefix + playerID))	
 }
 
+// Get an iterator over all playerIDs in which the keys are the playerIDs and the values are the players
+func (k Keeper) GetPlayerIterator(ctx sdk.Context) sdk.Iterator {
+	store := ctx.KVStore(k.storeKey)
+	return sdk.KVStorePrefixIterator(store, []byte(types.PlayerPrefix))
+}
+
 //---------------- game related keeper functions ----------------//
 // GetGame returns the game information, 
 func (k Keeper) GetGame(ctx sdk.Context, gameID string) (types.Game, error) {
@@ -116,9 +122,9 @@ func (k Keeper) GetGamePlayers(ctx sdk.Context, gameID string,  i int) string {
 }
 
 // get the game.Board[i][j]
-func (k Keeper) GetGamePlayers(ctx sdk.Context, gameID string,  i int, j int) string {
+func (k Keeper) GetGameBoard(ctx sdk.Context, gameID string) string {
 	game, _ := k.GetGame(ctx, gameID)
-	return game.Board[i][j]
+	return game.Board
 }
 
 // create a new game, no players
@@ -183,6 +189,11 @@ func (k Keeper) GameExists(ctx sdk.Context, gameID string) bool {
 	return store.Has([]byte(types.GamePrefix + gameID))
 }
 
+// Get an iterator over all GameIDs in which the keys are the gameIDs and the values are the Games
+func (k Keeper) GetGameIterator(ctx sdk.Context) sdk.Iterator {
+	store := ctx.KVStore(k.storeKey)
+	return sdk.KVStorePrefixIterator(store, []byte(types.GamePrefix))
+}
 
 //---------------- play helper functions ----------------//
 // check vertical of board
@@ -284,7 +295,7 @@ func getGameBoard(ctx sdk.Context, path []string, k Keeper) (res []byte, sdkErro
 		return nil, err
 	}
 
-	res, err = codec.MarshalJSONIndent(k.cdc, game.Board)
+	res, err = codec.MarshalJSONIndent(k.cdc, types.QueryResBoard(game.Board))
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}

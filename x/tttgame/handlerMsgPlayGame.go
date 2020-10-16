@@ -28,17 +28,26 @@ func handleMsgPlayGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgPlayGame) 
 	if k.GetPlayerOx(ctx, msg.PlayerID) != k.GetGameCurrTurn(ctx, msg.GameID) {
 		reutrn nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "it is not the player's turn, invalid play")
 	} 
-	if msg.X >= 3 || msg.X < 0 || msg.Y >= 3 || msg.Y < 0 || k.GetGameBoard(ctx, msg.GameID, X, Y) != "_" {
+	if msg.X >= 3 || msg.X < 0 || msg.Y >= 3 || msg.Y < 0 || k.GetGameBoard(ctx, msg.GameID)[msg.X][msg.Y] != "_" {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "coordinate is invalid, invalid play"
 	}
 
-	k.SetGameBoard(ctx, msg.GameID, msg.X, msg.Y, k.GetPlayerOx(ctx, msg.PlayerID))
-	if k.GetPlayerOx(ctx, msg.PlayerID) == "O" {
+	// place the piece
+	k.SetGameBoard(ctx, msg.GameID, msg.X, msg.Y, k.GetGameCurrTurn(ctx, msg.GameID))
+	if k.GetGameGurrTurn(ctx, msg.PlayerID) == "O" {
 		k.SetGameCurrTurn(ctx, msg.GameID, "X")
 	} else {
 		k.SetGameCurrTurn(ctx, msg.GameID, "O")
 	}
 
+	// print the board
+	var tmp [3][3]string
+	tmp := k.GetGameBoard(ctx, msg.GameID)
+	for i := 0; i < 3; i ++ {
+		fmt.Printf("%v\n", tmp[i])
+	}
+
+	// whether the game is completed
 	if k.IsWin(game.board, player.Ox) {
 		fmt.Printf("Player %v is win, game %ID is completed\n", msg.PlayerID, msg.GameID)
 		k.CompleteGame(ctx, msg.GameID)

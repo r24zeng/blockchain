@@ -22,10 +22,10 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	}
 
 	tttgameTxCmd.AddCommand(flags.PostCommands(
-    // this line is used by starport scaffolding # 1
-		GetCmdCreateGame(cdc),
-		GetCmdSetGame(cdc),
-		GetCmdDeleteGame(cdc),
+		// this line is used by starport scaffolding # 1
+		GetCmdInviteGame(cdc),
+		GetCmdAcceptGame(cdc),
+		GetCmdPlayGame(cdc),
 	)...)
 
 	return tttgameTxCmd

@@ -29,9 +29,10 @@ func GetQueryCmd(queryRoute string, cdc *codec.Codec) *cobra.Command {
 
 	tttgameQueryCmd.AddCommand(
 		flags.GetCommands(
-      // this line is used by starport scaffolding # 1
-			GetCmdListGame(queryRoute, cdc),
+			// this line is used by starport scaffolding # 1
 			GetCmdGetGame(queryRoute, cdc),
+			GetCmdGetPlayer(queryRoute, cdc),
+			GetCmdGetGameBoard(queryRoute, cdc),
 		)...,
 	)
 
