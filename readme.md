@@ -32,7 +32,7 @@ A player accpet to join the game.
 
 ### `playerID place a piece to (X, Y) on the game board`
 
-A player invites another player to join the game.
+A player place a piece to (X, Y) of the game.
 
 | Key   | Required | Type            | Description                                       |
 | ----- | -------- | --------------- | ------------------------------------------------- |
