@@ -20,16 +20,14 @@ A player invites another player to join the game.
 
 | Key   | Required | Type            | Description                                       |
 | ----- | -------- | --------------- | ------------------------------------------------- |
-| playerID  | Y        | String          | Player may exist or not                        |
 | gameID | Y        | String | Game may exist or not |
 
 ### `playerID accept to join gameID`
 
-A player invites another player to join the game.
+A player accpet to join the game.
 
 | Key   | Required | Type            | Description                                       |
 | ----- | -------- | --------------- | ------------------------------------------------- |
-| playerID  | Y        | String          | Player may exist or not                        |
 | gameID | Y        | String | Game may exist or not |
 
 ### `playerID place a piece to (X, Y) on the game board`
@@ -38,7 +36,7 @@ A player invites another player to join the game.
 
 | Key   | Required | Type            | Description                                       |
 | ----- | -------- | --------------- | ------------------------------------------------- |
-| playerID  | Y        | String          | Player may exist or not                        |
+| gameID  | Y        | String          | Game may exist or not                        |
 | X | Y        | String | in [0, 1, 2] |
 | Y | Y        | String | in [0, 1, 2] |
 
