@@ -25,17 +25,27 @@ func (k Keeper) CreatePlayer(ctx sdk.Context, playerID sdk.AccAdress) {
 	store.Set(key, bz)	
 }
 
-func (k Keeper) GetPlayerPubKey(ctx sdk.Context, playerID sdk.AccAdress) cryptotypes.PubKey {
+func (k Keeper) GetPlayer(ctx sdk.Context, playerID sdk.AccAdress) (Player, error) {
 	store := ctx.KVStore(k.storeKey)
 	var player types.Player
 	byteKey := []byte(types.PlayerPrefix + playerID)
 	err := k.cdc.UnmarshalBinaryLengthPrefixed(store.Get(byteKey), &player)
+	return player, nil
+}
+
+func (k Keeper) GetPlayerPubKey(ctx sdk.Context, playerID sdk.AccAdress) cryptotypes.PubKey {
+	player, err := k.GetPlayer(ctx, playerID)
 	return player.PubKey
 }
 
 func (k Keeper) PlayerExist(ctx sdk.Context, playerID sdk.AccAdress) {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has([]byte(types.PlayerPrefix + playerID))	
+}
+
+func (k Keeper) Sign(ctx sdk.Context, playerID sdk.Accdress, msg sdk.Msg) []byte {
+	player, err := k.GetPlayer(ctx, playerID)
+	return player.PrivKey.Sign(msg)
 }
 
 //---------------- game related keeper functions ----------------//

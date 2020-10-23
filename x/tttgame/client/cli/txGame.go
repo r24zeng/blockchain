@@ -32,10 +32,10 @@ func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if !k.PlayerExist(msg.PlayerID) {
-				k.CreatePlayer(msg.PlayerID)
+			if !k.PlayerExist(ctx, msg.PlayerID) {
+				k.CreatePlayer(ctx, msg.PlayerID)
 			}
-			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
+			txBytes, err := k.Sign(ctx, frommAddress, msg)
 			if err != nil {
 				return err
 			}
@@ -61,12 +61,26 @@ func GetCmdAcceptGame(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgAcceptGame(cliCtx.GetFromAddress(), argsGame)
+			fromAddress := cliCtx.GetFromAddress()
+			msg := types.NewMsgAcceptGame(fromAddress, argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}
-			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+			if !k.PlayerExist(msg.PlayerID) {
+				k.CreatePlayer(msg.PlayerID)
+			}
+			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
+			if err != nil {
+				return err
+			}
+
+			// broadcast to a Tendermint node
+			res, err := cliCtx.BroadcastTx(txBytes)
+			if err != nil {
+				return err
+			}
+			return cliCtx.PrintOutput(res)			
 		},
 	}
 }
@@ -84,13 +98,23 @@ func GetCmdPlayGame(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-
-			msg := types.NewMsgPlayGame(cliCtx.GetFromAddress(), argsGame, argsX, argsY)
+			fromAddress := cliCtx.GetFromAddress()
+			msg := types.NewMsgPlayGame(fromAddress, argsGame, argsX, argsY)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}
-			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
+			if err != nil {
+				return err
+			}
+
+			// broadcast to a Tendermint node
+			res, err := cliCtx.BroadcastTx(txBytes)
+			if err != nil {
+				return err
+			}
+			return cliCtx.PrintOutput(res)	
 		},
 	}
 }
