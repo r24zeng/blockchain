@@ -11,10 +11,16 @@ import (
 
 // NewHandler ...
 func NewHandler(k keeper.Keeper) sdk.Handler {
-	return func(ctx sdk.Context, sig []byte, msg sdk.Msg) (*sdk.Result, error) {
-		pub := k.GetPlayerPubKey(msg.PlayerID)
+	return func(ctx sdk.Context, tx sdk.Tx) (*sdk.Result, error) {
+		msg := tx.GetMsg()
+		sig := tx.GetSignaure()
+		if sig.Empty() {
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "signature is missing")
+		}
+		signer := msg.GetSigner()
+		pub := k.GetPlayerPubKey(signer)
 		if !pub.VerifySignature(msg, sig) {
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "verify signature fail")
+			return ctx, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "verify signature fail")
 		}
 
 		switch msg := msg.(type) {

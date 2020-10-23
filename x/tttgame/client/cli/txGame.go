@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/client/utils"
 	"github.com/r24zeng/tttgame/x/tttgame/keeper"
 	"github.com/r24zeng/tttgame/x/tttgame/types"
+	"github.com/cosmos/cosmos-sdk/client/keys"
 )
 
 func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
@@ -25,7 +26,8 @@ func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgInviteGame(cliCtx.GetFromAddress(), argsGame)
+			fromAddress := cliCtx.GetFromAddress()
+			msg := types.NewMsgInviteGame(, argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
@@ -33,7 +35,17 @@ func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 			if !k.PlayerExist(msg.PlayerID) {
 				k.CreatePlayer(msg.PlayerID)
 			}
-			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
+			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
+			if err != nil {
+				return err
+			}
+
+			// broadcast to a Tendermint node
+			res, err := cliCtx.BroadcastTx(txBytes)
+			if err != nil {
+				return err
+			}
+			return cliCtx.PrintOutput(res)
 		},
 	}
 }
