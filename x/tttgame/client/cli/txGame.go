@@ -35,10 +35,7 @@ func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 			if !k.PlayerExist(ctx, msg.PlayerID) {
 				k.CreatePlayer(ctx, msg.PlayerID)
 			}
-			txBytes, err := k.Sign(ctx, frommAddress, msg)
-			if err != nil {
-				return err
-			}
+			txBytes := k.Sign(ctx, frommAddress, msg)
 
 			// broadcast to a Tendermint node
 			res, err := cliCtx.BroadcastTx(txBytes)
@@ -70,10 +67,7 @@ func GetCmdAcceptGame(cdc *codec.Codec) *cobra.Command {
 			if !k.PlayerExist(msg.PlayerID) {
 				k.CreatePlayer(msg.PlayerID)
 			}
-			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
-			if err != nil {
-				return err
-			}
+			txBytes := k.Sign(ctx, frommAddress, msg)
 
 			// broadcast to a Tendermint node
 			res, err := cliCtx.BroadcastTx(txBytes)
@@ -104,10 +98,7 @@ func GetCmdPlayGame(cdc *codec.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			txBytes, err := txBldr.BuildAndSign(fromAddress, keys.DefaultKeyPass, msgs)
-			if err != nil {
-				return err
-			}
+			txBytes := k.Sign(ctx, frommAddress, msg)
 
 			// broadcast to a Tendermint node
 			res, err := cliCtx.BroadcastTx(txBytes)
