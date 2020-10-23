@@ -11,7 +11,12 @@ import (
 
 // NewHandler ...
 func NewHandler(k keeper.Keeper) sdk.Handler {
-	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
+	return func(ctx sdk.Context, sig []byte, msg sdk.Msg) (*sdk.Result, error) {
+		pub := k.GetPlayerPubKey(msg.PlayerID)
+		if !pub.VerifySignature(msg, sig) {
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "verify signature fail")
+		}
+
 		switch msg := msg.(type) {
 		// this line is used by starport scaffolding # 1
 		case types.MsgInviteGame:

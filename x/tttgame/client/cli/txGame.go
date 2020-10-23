@@ -10,60 +10,62 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/utils"
+	"github.com/r24zeng/tttgame/x/tttgame/keeper"
 	"github.com/r24zeng/tttgame/x/tttgame/types"
 )
 
 func GetCmdInviteGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "open-game [playerID] [gameID]",
+		Use:   "open-game [gameID]",
 		Short: "open a new game, waiting for another player",
-		Args:  cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			argsPlayer := string(args[0])
-			argsGame := string(args[1])
+		Args:  cobra.ExactArgs(1),
+		RunE: func(ctx sdk.Contex, k keeper.Keeper, cmd *cobra.Command, args []string) error {
+			argsGame := string(args[0])
 
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgInviteGame(cliCtx.GetFromAddress(), argsPlayer, argsGame)
+			msg := types.NewMsgInviteGame(cliCtx.GetFromAddress(), argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}
-			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			if !k.PlayerExist(msg.PlayerID) {
+				k.CreatePlayer(msg.PlayerID)
+			}
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
 		},
 	}
 }
 
 func GetCmdAcceptGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "accept-game [playerID] [gameID]",
+		Use:   "accept-game [gameID]",
 		Short: "accept invitation, start game",
-		Args:  cobra.ExtractArgs(2),
+		Args:  cobra.ExtractArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			argsPlayer := string(args[0])
-			argsGame := string(args[1])
+			argsGame := string(args[0])
 
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
-			msg := types.NewMsgAcceptGame(cliCtx.GetFromAddress(), argsPlayer, argsGame)
+			msg := types.NewMsgAcceptGame(cliCtx.GetFromAddress(), argsGame)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}
-			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
 		},
 	}
 }
 
 func GetCmdPlayGame(cdc *codec.Codec) *cobra.Command {
 	return &cobra.Command{
-		Use:   "play-game [playerID] [coordinate-X] [coordinate-Y]",
+		Use:   "play-game [coordinate-X] [coordinate-Y]",
 		Short: "play a piece to board",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			argsPlayer := string(args[0])
+			argsGame := string(args[0])
 			argsX := int(args[1])
 			argsY := int(args[2])
 
@@ -71,12 +73,12 @@ func GetCmdPlayGame(cdc *codec.Codec) *cobra.Command {
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			txBldr := auth.NewTxBuilderFromCLI(inBuf).WithTxEncoder(utils.GetTxEncoder(cdc))
 
-			msg := types.NewMsgPlayGame(cliCtx.GetFromAddress(), argsPlayer, argsX, argsY)
+			msg := types.NewMsgPlayGame(cliCtx.GetFromAddress(), argsGame, argsX, argsY)
 			err := msg.ValidateBasic()
 			if err != nil {
 				return err
 			}
-			return utils.GenerateOrBroadcastMsgs(cliCtx, txBldr, []sdk.Msg{msg})
+			return utils.CompleteAndBroadcastTxCLI(txBldr, cliCtx, []sdk.Msg{msg})
 		},
 	}
 }

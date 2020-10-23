@@ -9,12 +9,12 @@ const RouterKey = ModuleName // this was defined in key.go file
 
 // define a InviteGame message
 type MsgAcceptGame struct {
-	PlayerID string `json:"PlayerID"`
-	GameID   string `json:"value"`
+	PlayerID sdk.AccAddress `json:"PlayerID"`
+	GameID   string         `json:"value"`
 }
 
 // constructor function for MsgInviteGame
-func NewMsgAcceptGame(player string, game string) MsgInviteGame {
+func NewMsgAcceptGame(player sdk.AccAddress, game string) MsgInviteGame {
 	return MsgAcceptGame{
 		PlayerID: player,
 		GameID:   game,
@@ -42,6 +42,6 @@ func (msg MsgAcceptGame) GetSignBytes() []byte {
 }
 
 // GetSigners defines whose signature is required
-func (msg MsgAcceptGame) GetSigners() string {
-	return msg.PlayerID
+func (msg MsgAcceptGame) GetSigners() sdk.AccAddress {
+	return []sdk.AccAddress{msg.PlayerID}
 }

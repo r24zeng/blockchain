@@ -11,6 +11,12 @@ import (
 // and the keeper's address to pubkey map
 func InitGenesis(ctx sdk.Context, k keeper.Keeper /* TODO: Define what keepers the module needs */, data types.GenesisState) {
 	// TODO: Define logic for when you would like to initalize a new genesis
+	for _, record := range data.PlayerRecords {
+		keeper.SetPlayer(ctx, record)
+	}
+	for _, record := range data.GameRecords {
+		keeper.SetGame(ctx, record)
+	}
 }
 
 // ExportGenesis writes the current store values
@@ -18,5 +24,24 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper /* TODO: Define what keepers t
 // with InitGenesis
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) (data types.GenesisState) {
 	// TODO: Define logic for exporting state
-	return types.NewGenesisState()
+	var records []types.Player
+	iterator := k.GetPlayerIterator(ctx)
+	for ; iterator.Valid(); iterator.Next() {
+
+		ID := string(iterator.Key())
+		player, _ := k.GetPlayer(ctx, ID)
+		records = append(records, player)
+
+	}
+
+	var records []types.Game
+	iterator := k.GetGameIterator(ctx)
+	for ; iterator.Valid(); iterator.Next() {
+
+		ID := string(iterator.Key())
+		game, _ := k.GetGame(ctx, ID)
+		records = append(records, game)
+
+	}
+	return types.GenesisState{PlayerRecords: records}
 }

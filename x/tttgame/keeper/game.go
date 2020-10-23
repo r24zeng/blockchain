@@ -1,97 +1,59 @@
 package keeper
 
 import (
-	"strconv"
 	"fmt"
+	"crypto/md5"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/r24zeng/tttgame/x/tttgame/types"
 )
 
 //---------------- player related keeper functions ----------------//
-// get a player
-func (k Keeper) GetPlayer(ctx sdk.Context, playerID string) (types.Player, err) {
-	sotre := ctx.KVStore(k.storeKey)
+func (k Keeper) CreatePlayer(ctx sdk.Context, playerID sdk.AccAdress) {
+	var player types.Player
+	player.ID = ID
+	player.PrivKey = secp256k1.GenPriVKey()
+	player.PubKey = player.PrivKey.PubKey()
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshalBinaryLengthPrefixed(player)
+	key := []byte(types.GamePrefix + player.ID)
+	store.Set(key, bz)	
+}
+
+func (k Keeper) GetPlayerPubKey(ctx sdk.Context, playerID sdk.AccAdress) cryptotypes.PubKey {
+	store := ctx.KVStore(k.storeKey)
 	var player types.Player
 	byteKey := []byte(types.PlayerPrefix + playerID)
 	err := k.cdc.UnmarshalBinaryLengthPrefixed(store.Get(byteKey), &player)
-	if err != nil {
-		return player, err
-	}
-	return player, nil
+	return player.PubKey
 }
 
-// get player.GameID
-func (k Keeper) GetPlayerGameID(ctx sdk.Context, playerID string) string {
-	player, _ := k.GetPlayer(ctx, playerID)
-	return player.GameID
-}
-
-// get player.OX
-func (k Keeper) GetPlayerGameID(ctx sdk.Context, playerID string) string {
-	player, _ := k.GetPlayer(ctx, playerID)
-	return player.Ox
-}
-
-// set a player in KVStore
-func (k Keeper) SetPlayer(ctx sdk.Context, player types.Player) {
-	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshalBinaryLengthPrefixed(player)
-	key := []byte(types.PlayerPrefix + player.ID)
-	store.Set(key, bz)
-}
-// set a player's GameID
-func (k Keeper) SetPlayerGameID(ctx sdk.Contex, playerID string, gameID string) {
-	player, _ := k.GetPlayer(ctx, playerID)
-	player.GameID = gameID
-	k.SetPlayer(ctx, player)	
-}
-
-// set a player's Ox
-func (k Keeper) SetPlayerOX(ctx sdk.Contex, playerID string, Ox string) {
-	player, _ := k.GetPlayer(ctx, playerID)
-	player.Ox = Ox
-	k.SetPlayer(ctx, player)	
-}
-
-// creates a player in store
-func (k Keeper) CreatePlayer(ctx sdk.Context, playerID string) {
-	var player types.Player
-	player = types.NewPlayer(playerID)
-	k.SetPlayer(ctx, player)
-}
-
-// clear player.gameID when complete a game
-func (k Keeper) ClearPlayer(ctx sdk.Context, playerID string) {
-	player, _ := k.GetPlayer(ctx, playerID)
-	player.gameID = ""
-	player.Ox = ""
-	k.SetPlayer(ctx, player)
-}
-
-// deletes a player when quit the game
-func (k Keeper) DeletePlayer(ctx sdk.Context, playerID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte(types.GamePrefix + playerID))
-}
-
-// if this player exist
-func (k Keeper) PlayerExist(ctx sdk.Context, playerID string) {
+func (k Keeper) PlayerExist(ctx sdk.Context, playerID sdk.AccAdress) {
 	store := ctx.KVStore(k.storeKey)
 	return store.Has([]byte(types.PlayerPrefix + playerID))	
 }
 
-// Get an iterator over all playerIDs in which the keys are the playerIDs and the values are the players
-func (k Keeper) GetPlayerIterator(ctx sdk.Context) sdk.Iterator {
-	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte(types.PlayerPrefix))
+//---------------- game related keeper functions ----------------//
+// CreateGame create a game which does not exist, no players
+func (k Keeper) CreateGame(ctx sdk.Context, gameID string) {
+	var game types.Game
+	game.ID = gameID
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			game.Board[i][j] = -1
+		}
+	}
+	game.Player = []
+	game.CurrTurn = 0
+	k.SetGame(ctx, game)
 }
 
-//---------------- game related keeper functions ----------------//
-// GetGame returns the game information, 
+// GetGame returns the game information
 func (k Keeper) GetGame(ctx sdk.Context, gameID string) (types.Game, error) {
 	store := ctx.KVStore(k.storeKey)
 	var game types.Game
@@ -104,76 +66,63 @@ func (k Keeper) GetGame(ctx sdk.Context, gameID string) (types.Game, error) {
 }
 
 // get game.State
-func (k Keeper) GetGameState(ctx skd.Context, gameID string) string {
+func (k Keeper) GetGameState(ctx sdk.Context, gameID string) string {
 	game, _ := k.GetGame(ctx, gameID)
-	return game.State
+	if game.Players == nil { 
+		return "completed games" 
+	}
+	if len(game.Players) == 1 {
+		return "open games"
+	} 
+	return "games currently in progress"
 }
 
-// get game.CurrTurn
-func (k Keeper) GetGameCurrTurn(ctx skd.Context, gameID string) string {
+// get current player
+func (k Keeper) GetGameCurrPlayer(ctx sdk.Context, gameID string) sdk.AccAddress {
 	game, _ := k.GetGame(ctx, gameID)
-	return game.CurrTurn
+	return game.Players[game.CurrTurn]
 }
 
-// get the ith game.Players
-func (k Keeper) GetGamePlayers(ctx sdk.Context, gameID string,  i int) string {
+// open a game(the game exists), only one player, if the player doesn't exist, create a new player
+func (k Keeper) OpenGame(ctx sdk.Context, playerID sdk.AccAdress, gameID string) {
+	// if !k.PlayerExist(ctx, playerID) {
+	// 	k.CreatePlayer(ctx, playerID)
+	// }
 	game, _ := k.GetGame(ctx, gameID)
-	return game.Player[i]
-}
-
-// get the game.Board[i][j]
-func (k Keeper) GetGameBoard(ctx sdk.Context, gameID string) string {
-	game, _ := k.GetGame(ctx, gameID)
-	return game.Board
-}
-
-// create a new game, no players
-func (k Keeper) CreateGame(ctx sdk.Context, gameID string) {
-	var game types.Game
-	game = types.NewGame(gameID)
+	game.Players.append(playerID)
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 3; j++ {
+			game.Board[i][j] = -1
+		}
+	}
+	game.CurrTurn = 0
 	k.SetGame(ctx, game)
 }
 
-// set game.Board[i][j]
-func (k Keeper) SetGameBoard(ctx sdk.Context, gameID string, i int, j int, ox string) {
+// activate the game, two players, if the player doesn't exist, create a new player 
+func (k Keeper) ActiveGame(ctx sdk.Context, playerID sdk.AccAdress, gameID string) error {
+	// if !k.PlayerExist(ctx, playerID) {
+	// 	k.CreatePlayer(ctx, playerID)
+	// }
 	game, _ := k.GetGame(ctx, gameID)
-	game.Board[i][j] = ox
-	k.SetGame(ctx, game)
-}
+	
+	// if playerID = inviter, then invalid
+	if game.Players[0] == playerID {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Inviter can't be opponent, accept fail")
+	}
 
-// set game.CurrTurn
-func (k Keeper) SetGameCurrTurn(ctx sdk.Context, gameID string, ox string) {
-	game, _ := k.GetGame(ctx, gameID)
-	game.CurrTurn = ox
+	game.Players.append(playerID)
+	pub1 := k.GetPlayerPubKey(players[0])
+	pub2 := k.GetPlayerPubKey(players[1])
+	hash_value = md5.Sum(pub1 + pub2)
+	if hash_value[0]/16 != 0 {
+		tmp := game.Player[0]
+		game.Player[1] = game.Player[0]
+		game.Player[0] = tmp
+	}
 	k.SetGame(ctx, game)
+	return nil
 }
-
-// open a game, only one player
-func (k Keeper) OpenGame(ctx sdk.Context, playerID string, gameID string) {
-	game, _ := k.GetGame(ctx, gameID)
-	game.State = "open games"
-	game.Players[0] = playerID
-	game.CurrTurn = "O"
-	k.SetGame(ctx, game)
-}
-
-// activate the game, two players
-func (k Keeper) ActiveGame(ctx sdk.Context, playerID string, gameID string) {
-	game, _ := k.GetGame(ctx, gameID)
-	game.State = "games currently in progress"
-	game.Players[1] = playerID
-	k.SetGame(ctx, game)
-}
-
-// complte the game
-func (k Keeper) CompleteGame(ctx sdk.Context, gameID string) {
-	game, _ := k.GetGame(ctx, gameID)
-	game.State = "completed games"
-	game.Players[0] = ""
-	game.Players[1] = ""
-	k.SetGame(ctx, game)
-}
-
 
 // set game in KVStore
 func (k Keeper) SetGame(ctx sdk.Context, game type.Game) {
@@ -189,72 +138,43 @@ func (k Keeper) GameExists(ctx sdk.Context, gameID string) bool {
 	return store.Has([]byte(types.GamePrefix + gameID))
 }
 
+// place the piece to game board and set the current turn
+func (k Keeper) PlayGame(ctx sdk.Context, gameID string, i int, j int) {
+	game, _ := k.GetGame(ctx, gameID)
+	game.Board[i][j] = game.CurrTurn
+	if IsWin(ctx, game.Board, i, j, game.CurrTurn) {
+		game.Players = nil	
+	} else {
+		game.CurrTurn = game.CurrTurn == 0? 1: 0
+	}
+	k.SetGame(ctx, game)
+}
+
+func (k Keeper) IsWin(ctx sdk.Context, board int, i int, j int, curr int) bool {
+	isWin := false
+	if game.Board[i][0] == curr & game.Board[i][1] == curr & game.Board[i][2] == curr {
+		isWin = true
+	}
+	if game.Board[0][j] == curr & game.Board[1][j] == curr & game.Board[2][j] == curr {
+		isWin = true
+	}
+	if i == j & game.Board{
+		if game.Board[0][0] == curr & game.Board[1][1] == curr & game.Board[2][2] == curr {
+			isWin = true
+		}
+	} else {
+		if game.Board[0][2] == curr & game.Board[1][1] == curr & game.Board[2][0] == curr {
+			isWin = true
+		}
+	}
+	return isWin	
+}
+
 // Get an iterator over all GameIDs in which the keys are the gameIDs and the values are the Games
 func (k Keeper) GetGameIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, []byte(types.GamePrefix))
 }
-
-//---------------- play helper functions ----------------//
-// check vertical of board
-func (k Keeper) isVerticalWin(board [3][3]string, ox string) {
-	res := true
-	for i := 0; i < 3; i ++ {
-		res = true
-		for j := 0; j < 3; j ++ {
-			if board[i][j] != ox { 
-				res = false
-				break 
-			} 
-		}
-	}
-	return res	
-}
-
-// check horizontal of board
-func (k Keeper) isHorizontalWin(board [3][3]string, ox string) {
-	res := true
-	for i := 0; i < 3; i ++ {
-		res = true
-		for j := 0; j < 3; j ++ {
-			if board[j][i] != ox { 
-				res = false
-				break 
-			} 
-		}
-	}
-	return res	
-}
-
-// check diagonal of board
-func (k Keeper) isDiagonalWin(board [3][3]string, ox string) {
-	res := true
-	for i := 0; i < 3; i ++ {
-		for j := 0; j < 3; j ++ {
-			if i == j && board[i][j] != ox { 
-				res := false
-				break
-			}
-		}
-	}
-	if res == true { return res }
-	res = true
-	for i := 0; i < 3; i ++ {
-		for j := 0; j < 3; j ++ {
-			if i == n-j-1 && board[i][j] != ox { 
-				res := false
-				break
-			}
-		}
-	}
-	return res	
-}
-
-// return if the player is win
-func (k Keeper) IsWin(board [3][3]string, ox string) {
-	return k.isVerticalWin(board, ox) || k.isHorizontalWin(board, ox) || k.isDiagonalWin(board, ox)
-}
-
 
 //---------------- Functions used by querier ----------------//
 
@@ -273,32 +193,15 @@ func getGame(ctx sdk.Context, path []string, k Keeper) (res []byte, sdkError err
 	return res, nil
 }
 
-func getPlayer(ctx sdk.Context, path []string, k Keeper) (res []byte, sdkError error) {
-	key := path[0]
-	game, err := k.GetPlayer(ctx, key)
-	if err != nil {
-		return nil, err
+func listGame(ctx sdk.Context, path []string, k Keeper) (res []byte, sdkError error) {
+	var gameList []types.Game
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.GamePrefix))
+	for ; iterator.Valid(); iterator.Next() {
+		var game types.Game
+		k.cdc.MustUnmarshalBinaryLengthPrefixed(store.Get(iterator.Key()), &game)
+		gameList = append(gameList, game)
 	}
-
-	res, err = codec.MarshalJSONIndent(k.cdc, player)
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
-	return res, nil
-}
-
-func getGameBoard(ctx sdk.Context, path []string, k Keeper) (res []byte, sdkError error) {
-	key := path[0]
-	game, err := k.GetGame(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err = codec.MarshalJSONIndent(k.cdc, types.QueryResBoard(game.Board))
-	if err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
-	}
-
+	res := codec.MustMarshalJSONIndent(k.cdc, gameList)
 	return res, nil
 }

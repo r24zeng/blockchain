@@ -12,47 +12,26 @@ import (
 
 // Handle a message to delete name
 func handleMsgPlayGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgPlayGame) (*sdk.Result, error) {
-	if !k.PlayerExist(ctx, msg.PlayerID) { // this player doesn't exist
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "the player doesn't exist, invalid play")
+	// player account has been created or verified in client/cliCommand
+	// msg has been verified in NewHandler, then route to the corresponding handler
+	
+	if !k.GameExist(ctx, msg.GameID) {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "this game doesn't exist")
 	}
 
-	if k.GetPlayerGameID(ctx, msg.PlayerID) == "" { // this player is not in game progress
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "the player is not in a gam, invalid play")
-	}
-
-	if k.GetGameState(ctx, msg.GameID) != "games currently in progress" { // this game is not in progress, can't play
+	if k.GetGameState(ctx, msg.GameID) != "games currently in progress" { 
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "this game is not in progress, invalid play")
 	}
 
-	// it is not the player's turn, or the coordinate is out of board
-	if k.GetPlayerOx(ctx, msg.PlayerID) != k.GetGameCurrTurn(ctx, msg.GameID) {
-		reutrn nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "it is not the player's turn, invalid play")
-	} 
-	if msg.X >= 3 || msg.X < 0 || msg.Y >= 3 || msg.Y < 0 || k.GetGameBoard(ctx, msg.GameID)[msg.X][msg.Y] != "_" {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "coordinate is invalid, invalid play"
+	if k.GetGameCurrPlayer(ctx, msg.GameID) != msg.PlayerID {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "wrong player or game, invalid play"
 	}
 
-	// place the piece
-	k.SetGameBoard(ctx, msg.GameID, msg.X, msg.Y, k.GetGameCurrTurn(ctx, msg.GameID))
-	if k.GetGameGurrTurn(ctx, msg.PlayerID) == "O" {
-		k.SetGameCurrTurn(ctx, msg.GameID, "X")
-	} else {
-		k.SetGameCurrTurn(ctx, msg.GameID, "O")
+	// play game, if win then complete the game
+	k.PlayGame(ctx, msg.GameID, msg.X, msg.Y)
+	if k.GetGameState(ctx, msg.GameID) == "completed games" {
+		fmt.Print("current player win, game %ID is completed\n", msg.GameID)
 	}
-
-	// print the board
-	var tmp [3][3]string
-	tmp := k.GetGameBoard(ctx, msg.GameID)
-	for i := 0; i < 3; i ++ {
-		fmt.Printf("%v\n", tmp[i])
-	}
-
-	// whether the game is completed
-	if k.IsWin(game.board, player.Ox) {
-		fmt.Printf("Player %v is win, game %ID is completed\n", msg.PlayerID, msg.GameID)
-		k.CompleteGame(ctx, msg.GameID)
-		k.ClearPlayer(ctx, msg.PlayerID)
-	}
-
+	
 	return &sdk.Result{}, nil
 }

@@ -7,12 +7,12 @@ import (
 
 // define a InviteGame message
 type MsgInviteGame struct {
-	PlayerID string `json:"PlayerID"`
-	GameID   string `json:"value"`
+	PlayerID sdk.AccAddress `json:"PlayerID"`
+	GameID   string         `json:"value"`
 }
 
 // constructor function for MsgInviteGame
-func NewMsgInviteGame(player string, game string) MsgInviteGame {
+func NewMsgInviteGame(player sdk.AccAddress, game string) MsgInviteGame {
 	return MsgInviteGame{
 		PlayerID: player,
 		GameID:   game,
@@ -40,6 +40,6 @@ func (msg MsgInviteGame) GetSignBytes() []byte {
 }
 
 // GetSigners defines whose signature is required
-func (msg MsgInviteGame) GetSigners() string {
-	return msg.PlayerID
+func (msg MsgInviteGame) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.PlayerID}
 }
