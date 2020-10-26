@@ -5,23 +5,22 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-const RouterKey = ModuleName // this was defined in key.go file
+// const RouterKey = ModuleName // this was defined in key.go file
 
-// define a InviteGame message
+// MsgAcceptGame define a InviteGame message
 type MsgAcceptGame struct {
-	PlayerID sdk.AccAddress `json:"PlayerID"`
-	GameID   string         `json:"value"`
+	Player sdk.AccAddress `json:"Player"`
+	GameID string         `json:"value"`
 }
 
-// constructor function for MsgInviteGame
-func NewMsgAcceptGame(player sdk.AccAddress, game string) MsgInviteGame {
+// NewMsgAcceptGame is a constructor function for MsgAcceptGame
+func NewMsgAcceptGame(player sdk.AccAddress, game string) MsgAcceptGame {
 	return MsgAcceptGame{
-		PlayerID: player,
-		GameID:   game,
+		Player: player,
+		GameID: game,
 	}
 }
 
-//------------ Msg Interface ------------//
 // Route should return the name of the module
 func (msg MsgAcceptGame) Route() string { return RouterKey }
 
@@ -30,8 +29,8 @@ func (msg MsgAcceptGame) Type() string { return "Accept_game" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgAcceptGame) ValidateBasic() error {
-	if len(msg.PlayerID) == 0 || len(msg.GameID) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "PlayerID and/or GameID cannot be empty")
+	if len(msg.GameID) == 0 {
+		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "GameID cannot be empty")
 	}
 	return nil
 }
@@ -42,6 +41,6 @@ func (msg MsgAcceptGame) GetSignBytes() []byte {
 }
 
 // GetSigners defines whose signature is required
-func (msg MsgAcceptGame) GetSigners() sdk.AccAddress {
-	return []sdk.AccAddress{msg.PlayerID}
+func (msg MsgAcceptGame) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Player}
 }

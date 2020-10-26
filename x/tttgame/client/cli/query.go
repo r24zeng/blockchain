@@ -31,8 +31,7 @@ func GetQueryCmd(queryRoute string, cdc *codec.Codec) *cobra.Command {
 		flags.GetCommands(
 			// this line is used by starport scaffolding # 1
 			GetCmdGetGame(queryRoute, cdc),
-			GetCmdGetPlayer(queryRoute, cdc),
-			GetCmdGetGameBoard(queryRoute, cdc),
+			GetCmdListGame(queryRoute, cdc),
 		)...,
 	)
 

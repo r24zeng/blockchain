@@ -14,7 +14,7 @@ const (
 	QuerierRoute = ModuleName
 )
 
+// GamePrefix is for storing game in KVStore
 const (
-	GamePrefix   = "game-"
-	PlayerPrefix = "player-"
+	GamePrefix = "game-"
 )

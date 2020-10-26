@@ -5,7 +5,7 @@ import "fmt"
 // GenesisState - all tttgame state that must be provided at genesis
 type GenesisState struct {
 	// TODO: Fill out what is needed by the module for genesis
-	GameRecords []Game `json: "game_records"`
+	GameRecords []Game `json:"game_records"`
 }
 
 // NewGenesisState creates a new GenesisState object
@@ -28,14 +28,8 @@ func DefaultGenesisState() GenesisState {
 func ValidateGenesis(data GenesisState) error {
 	// TODO: Create a sanity check to make sure the state conforms to the modules needs
 	for _, record := range data.GameRecords {
-		if record.GameID == nil {
-			return fmt.Errorf("Invalid GameRecord: %s. Error: Missing GameID", record.ID)
-		}
-		if record.Board == nil {
+		if len(record.Board) == 0 {
 			return fmt.Errorf("Invalid GameRecord: %s. Error: Missing Board", record.ID)
-		}
-		if record.CurrTurn == nil {
-			return fmt.Errorf("Invalid GameRecord: %s. Error: Missing CurrTurn", record.ID)
 		}
 	}
 	return nil

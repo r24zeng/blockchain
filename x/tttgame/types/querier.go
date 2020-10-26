@@ -1,4 +1,7 @@
 package types
 
+// QueryGetGame
 const QueryGetGame = "get-game"
-const QueryGetGameBoard = "list-game"
+
+// QueryListGame
+const QueryListGame = "list-game"

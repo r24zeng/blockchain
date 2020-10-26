@@ -3,6 +3,7 @@ package tttgame
 import (
 	"fmt"
 
+	crkeys "github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -11,7 +12,7 @@ import (
 )
 
 // Handle a message to delete name
-func handleMsgPlayGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgPlayGame) (*sdk.Result, error) {
+func handleMsgPlayGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgPlayGame, key crkeys.Keybase) (*sdk.Result, error) {
 	// player account has been created or verified in client/cliCommand
 	// msg has been verified in NewHandler, then route to the corresponding handler
 	
@@ -23,7 +24,8 @@ func handleMsgPlayGame(ctx sdk.Context, k keeper.Keeper, msg types.MsgPlayGame) 
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "this game is not in progress, invalid play")
 	}
 
-	if k.GetGameCurrPlayer(ctx, msg.GameID) != msg.PlayerID {
+	pub := key.GetByAddress(msg.Player)
+	if k.GetGameCurrPlayer(ctx, msg.GameID) != pub {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "wrong player or game, invalid play"
 	}
 

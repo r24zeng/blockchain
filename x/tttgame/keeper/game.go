@@ -6,47 +6,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	crypto "github.com/tendermint/tendermint/crypto"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/r24zeng/tttgame/x/tttgame/types"
 )
-
-//---------------- player related keeper functions ----------------//
-func (k Keeper) CreatePlayer(ctx sdk.Context, playerID sdk.AccAdress) {
-	var player types.Player
-	player.ID = ID
-	player.PrivKey = secp256k1.GenPriVKey()
-	player.PubKey = player.PrivKey.PubKey()
-	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshalBinaryLengthPrefixed(player)
-	key := []byte(types.GamePrefix + player.ID)
-	store.Set(key, bz)	
-}
-
-func (k Keeper) GetPlayer(ctx sdk.Context, playerID sdk.AccAdress) (Player, error) {
-	store := ctx.KVStore(k.storeKey)
-	var player types.Player
-	byteKey := []byte(types.PlayerPrefix + playerID)
-	err := k.cdc.UnmarshalBinaryLengthPrefixed(store.Get(byteKey), &player)
-	return player, nil
-}
-
-func (k Keeper) GetPlayerPubKey(ctx sdk.Context, playerID sdk.AccAdress) cryptotypes.PubKey {
-	player, err := k.GetPlayer(ctx, playerID)
-	return player.PubKey
-}
-
-func (k Keeper) PlayerExist(ctx sdk.Context, playerID sdk.AccAdress) {
-	store := ctx.KVStore(k.storeKey)
-	return store.Has([]byte(types.PlayerPrefix + playerID))	
-}
-
-func (k Keeper) Sign(ctx sdk.Context, playerID sdk.Accdress, msg sdk.Msg) []byte {
-	player, err := k.GetPlayer(ctx, playerID)
-	return player.PrivKey.Sign(msg)
-}
 
 //---------------- game related keeper functions ----------------//
 // CreateGame create a game which does not exist, no players
@@ -58,7 +21,7 @@ func (k Keeper) CreateGame(ctx sdk.Context, gameID string) {
 			game.Board[i][j] = -1
 		}
 	}
-	game.Player = []
+	game.Players = []
 	game.CurrTurn = 0
 	k.SetGame(ctx, game)
 }
@@ -94,12 +57,9 @@ func (k Keeper) GetGameCurrPlayer(ctx sdk.Context, gameID string) sdk.AccAddress
 }
 
 // open a game(the game exists), only one player, if the player doesn't exist, create a new player
-func (k Keeper) OpenGame(ctx sdk.Context, playerID sdk.AccAdress, gameID string) {
-	// if !k.PlayerExist(ctx, playerID) {
-	// 	k.CreatePlayer(ctx, playerID)
-	// }
+func (k Keeper) OpenGame(ctx sdk.Context, pub crypto.PubKey, gameID string) {
 	game, _ := k.GetGame(ctx, gameID)
-	game.Players.append(playerID)
+	game.Players.append(pub)
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 3; j++ {
 			game.Board[i][j] = -1
@@ -110,21 +70,16 @@ func (k Keeper) OpenGame(ctx sdk.Context, playerID sdk.AccAdress, gameID string)
 }
 
 // activate the game, two players, if the player doesn't exist, create a new player 
-func (k Keeper) ActiveGame(ctx sdk.Context, playerID sdk.AccAdress, gameID string) error {
-	// if !k.PlayerExist(ctx, playerID) {
-	// 	k.CreatePlayer(ctx, playerID)
-	// }
+func (k Keeper) ActiveGame(ctx sdk.Context, pub crypto.PubKey, gameID string) error {
 	game, _ := k.GetGame(ctx, gameID)
 	
-	// if playerID = inviter, then invalid
-	if game.Players[0] == playerID {
+	// if pub = inviter, then invalid
+	if game.Players[0] == pub {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Inviter can't be opponent, accept fail")
 	}
 
-	game.Players.append(playerID)
-	pub1 := k.GetPlayerPubKey(players[0])
-	pub2 := k.GetPlayerPubKey(players[1])
-	hash_value = md5.Sum(pub1 + pub2)
+	game.Players.append(pub)
+	hash_value = md5.Sum(game.Players[0] + game.Players[1])
 	if hash_value[0]/16 != 0 {
 		tmp := game.Player[0]
 		game.Player[1] = game.Player[0]

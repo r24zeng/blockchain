@@ -38,14 +38,14 @@ func GetCmdListGame(queryRoute string, cdc *codec.Codec) *cobra.Command {
 		Short: "List all games",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx := context.NewCLIContext().WithCodec(cdc)
-			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/%s/%s", queryRoute, types.QueryGetPlayer, key), nil)
+			res, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/%s/%s", queryRoute, types.QueryGetGame, key), nil)
 			if err != nil {
 				fmt.Printf("could not resolve game %s \n%s\n", key, err.Error())
 
 				return nil
 			}
 
-			var out []types.Player
+			var out []types.Game
 			cdc.MustUnmarshalJSON(res, &out)
 			return cliCtx.PrintOutput(out)
 		},

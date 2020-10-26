@@ -10,7 +10,6 @@ func RegisterCodec(cdc *codec.Codec) {
 	cdc.RegisterConcrete(MsgInviteGame{}, "tttgame/InviteGame", nil)
 	cdc.RegisterConcrete(MsgAcceptGame{}, "tttgame/AcceptGame", nil)
 	cdc.RegisterConcrete(MsgPlayGame{}, "tttgame/PlayGame", nil)
-	cdc.RegisterConcrete(Player{}, "tttgame/Player", nil)
 	cdc.RegisterConcrete(Game{}, "tttgame/Game", nil)
 }
 
